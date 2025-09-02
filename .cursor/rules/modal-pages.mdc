@@ -1,0 +1,140 @@
+# Modal Page Implementation Rules
+
+## Core Principles
+- **NEVER** create new pages on new routes
+- **ALWAYS** implement pages as modals imported in [src/app/hero-blocks/page.tsx](mdc:src/app/hero-blocks/page.tsx)
+- New pages appear between `<rat.In></rat.In>` tags
+- All modal pages must follow the established pattern
+
+## Modal Structure Template
+
+Every modal page must follow this exact structure:
+
+```tsx
+<Box
+    className="modal fade"
+    id="[modalName]Modal"
+    data-bs-backdrop="static"
+    tabIndex={-1}
+    aria-labelledby="exampleModalLabel"
+    aria-hidden="true"
+    overflow={"hidden"}
+>
+    <div className="modal-dialog modal-fullscreen">
+        <div className="modal-content">
+            <[ModalName]Modal />
+        </div>
+    </div>
+</Box>
+```
+
+## Modal Component Pattern
+
+Modal components should follow this structure:
+
+```tsx
+export const [ModalName]Modal: FC<[ModalName]ModalProps> = () => {
+    const { appData, setAppData } = useContext(AppContext);
+    
+    // Close button handler
+    const closeButtonClick = () => {
+        const element = document.getElementById('[modalName]Modal')
+        if (element) {
+            element.classList.remove("show");
+            element.style.display = "";
+        }
+    }
+
+    return (
+        <Box
+            top={0}
+            width={"100%"}
+            height={"100%"}
+            borderBottomLeftRadius={20}
+            borderBottomRightRadius={20}
+            zIndex={900}
+            background={"white"}
+        >
+            <Flex
+                flexDirection={"column"}
+                justifyContent={"center"}
+                alignItems={"center"}
+            >
+                {/* Close button block */}
+                <div
+                    style={{
+                        padding: 4,
+                        left: 314,
+                        top: 10,
+                        position: "absolute",
+                        background: 'grey',
+                        borderRadius: 100,
+                        justifyContent: "flex-start",
+                        alignItems: "flex-start",
+                        gap: 10,
+                        display: "inline-flex",
+                    }}
+                >
+                    <Button
+                        className="btn-close"
+                        aria-label="Close"
+                        onClick={closeButtonClick}
+                        style={{
+                            width: '28px',
+                            height: '28px',
+                        }}
+                    >
+                    </Button>
+                </div>
+                
+                <Box height={'60px'} />
+                
+                {/* Modal content goes here */}
+                
+            </Flex>
+        </Box>
+    );
+}
+```
+
+## Required Elements
+
+### 1. Context Usage
+- Always import and use `AppContext` with `useContext(AppContext)`
+- Access `appData` and `setAppData` from context
+
+### 2. Close Button Implementation
+- Must include close button with `closeButtonClick` handler
+- Close button should remove "show" class and reset display style
+- Use `document.getElementById('[modalName]Modal')` to target the modal
+
+### 3. Modal Container Structure
+- Use `Box` component as main container
+- Apply consistent styling: `borderBottomLeftRadius={20}`, `borderBottomRightRadius={20}`, `zIndex={900}`
+- Use `Flex` for layout with `flexDirection={"column"}`, `justifyContent={"center"}`, `alignItems={"center"}`
+
+### 4. Spacing and Layout
+- Include `<Box height={'60px'} />` after close button for proper spacing
+- Use responsive width (`90%` for content containers)
+- Apply consistent padding and margins
+
+## Import and Integration
+
+When adding a new modal page to [src/app/hero-blocks/page.tsx](mdc:src/app/hero-blocks/page.tsx):
+
+1. Import the modal component at the top of the file
+2. Add the modal structure within the existing component structure
+3. Ensure the modal ID is unique and follows the `[name]Modal` pattern
+
+## Styling Guidelines
+
+- Use consistent background colors (`background={"white"}`)
+- Apply standard box shadows: `boxShadow={"0px 8px 16px rgba(0, 0, 0, 0.08)"}`
+- Use standard border radius: `borderRadius={16}`
+- Include outline styling: `outline={"1px #F5F5F5 solid"}`, `outlineOffset={"-1px"}`
+
+## State Management
+
+- Use appropriate state hooks (`useState`, `useEffect`) as needed
+- Follow the pattern established in [ContactModal example](mdc:src/components/contact/ContactModal.tsx)
+- Maintain state consistency with `appData` context

@@ -1,0 +1,139 @@
+---
+alwaysApply: false
+---
+# LocalStorage Usage Patterns
+
+## Overview
+
+This application uses localStorage extensively to persist critical user data and state. **CRITICAL**: Existing localStorage values must NEVER be overwritten without careful consideration as they contain essential data for application functionality.
+
+## Key Principles
+
+### 1. Always Use app_id Prefix
+- **REQUIRED**: All localStorage keys must be prefixed with `appData.app_id`
+- Pattern: `appData.app_id + "data"` or `appData.app_id + "specificKey"`
+- This ensures data isolation and prevents conflicts
+
+### 2. SSR Safety
+- **ALWAYS** check `typeof window !== "undefined"` before accessing localStorage
+- This prevents server-side rendering errors in Next.js
+
+### 3. JSON Handling
+- Use `JSON.stringify()` when storing objects/arrays
+- Use `JSON.parse()` when retrieving complex data
+- Handle parsing errors gracefully with try-catch blocks
+
+## Three Interaction Patterns
+
+### Pattern 1: Context → LocalStorage
+Store values from AppContext to localStorage:
+
+```typescript
+useEffect(() => {
+  if (typeof window !== "undefined" && appData.someValue) {
+    localStorage.setItem(
+      appData.app_id + "data",
+      JSON.stringify({ someKey: appData.someValue })
+    );
+  }
+}, [appData.someValue]);
+```
+
+### Pattern 2: LocalStorage → Context
+Retrieve values from localStorage and populate context:
+
+```typescript
+useEffect(() => {
+  if (typeof window !== "undefined") {
+    const storedData = localStorage.getItem(appData.app_id + "data");
+    if (storedData) {
+      try {
+        const { affiliate_id } = JSON.parse(storedData);
+        //@ts-ignore
+        setAppData({ ...appData, affiliate_id });
+      } catch (error) {
+        console.error("Failed to parse localStorage data:", error);
+      }
+    }
+  }
+}, []);
+```
+
+### Pattern 3: Direct LocalStorage
+Direct localStorage usage without context interaction:
+
+```typescript
+useEffect(() => {
+  if (typeof window !== "undefined") {
+    const existingData = localStorage.getItem(appData.app_id + "customKey");
+    // Direct localStorage operations
+    localStorage.setItem(appData.app_id + "customKey", value);
+  }
+}, []);
+```
+
+## Critical Data Protection
+
+### Existing Critical Values
+The following localStorage values are critical and must be preserved:
+- `affiliate_id` - User's affiliate identifier
+- `session` data - User verification status
+- `user_id` - User identification
+- Any data with `appData.app_id` prefix
+
+### Safe Merging Pattern
+When updating localStorage with existing data:
+
+```typescript
+// SAFE: Merge with existing data
+const existingData = localStorage.getItem(appData.app_id + "data");
+const current = existingData ? JSON.parse(existingData) : {};
+const updated = { ...current, newKey: newValue };
+localStorage.setItem(appData.app_id + "data", JSON.stringify(updated));
+
+// DANGEROUS: This overwrites existing data
+localStorage.setItem(appData.app_id + "data", JSON.stringify({ newKey: newValue }));
+```
+
+## URL Parameter Integration
+
+Handle URL parameters (like `?aff=`) that should update localStorage:
+
+```typescript
+useEffect(() => {
+  const aff_id = searchParams.get("aff");
+  if (typeof window !== "undefined" && aff_id) {
+    // Safely merge with existing localStorage data
+    const existingData = localStorage.getItem(appData.app_id + "data");
+    const current = existingData ? JSON.parse(existingData) : {};
+    localStorage.setItem(
+      appData.app_id + "data",
+      JSON.stringify({ ...current, affiliate_id: aff_id })
+    );
+  }
+}, [searchParams]);
+```
+
+## AppContext Integration
+
+### Key Integration Points
+- Use [src/context/AppContext.tsx](mdc:src/context/AppContext.tsx) for state management
+- localStorage serves as persistence layer for AppContext data
+- Always use `setAppData` with spread operator to preserve existing context state
+- Use `@ts-ignore` when necessary for TypeScript compatibility with context updates
+
+### Best Practices
+1. **Preserve Existing Data**: Always merge with existing localStorage and context data
+2. **Error Handling**: Wrap JSON.parse in try-catch blocks
+3. **Dependency Arrays**: Include relevant dependencies in useEffect arrays
+4. **Type Safety**: Use TypeScript interfaces from [src/types/](mdc:src/types/) when available
+5. **App ID Usage**: Reference `appData.app_id` from AppContext, never hardcode localStorage keys
+
+## Common Pitfalls to Avoid
+
+- ❌ Overwriting localStorage without checking existing data
+- ❌ Forgetting SSR safety checks (`typeof window !== "undefined"`)
+- ❌ Not using app_id prefix for localStorage keys
+- ❌ Ignoring JSON parsing errors
+- ❌ Directly mutating appData instead of using setAppData with spread operator
+- ❌ Hardcoding localStorage keys instead of using app_id prefix

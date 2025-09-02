@@ -1,0 +1,131 @@
+# Authentication Flow Architecture
+
+## Overview
+
+This wrapper application contains a subapplication and implements a two-stage authentication process:
+1. **Wrapper Authentication**: User signs into the wrapper application
+2. **Subapplication Authentication**: Wrapper retrieves and passes login credentials to the subapplication
+
+## Core Authentication API
+
+The main authentication endpoint is located at [src/auth/authsignin.ts](mdc:src/auth/authsignin.ts).
+
+## Authentication Flow Pattern
+
+### Stage 1: Wrapper Application Signin
+
+Use the `signinAuth` callback pattern for wrapper authentication:
+
+```typescript
+const signinAuth = useCallback(async (session: AuthSession, affiliateid: string = "") => {
+  // Extract email and id from session tokens
+  let email = session.tokens?.signInDetails?.loginId || user?.email || "";
+  let id = session.tokens?.idToken?.payload.sub || user?.id || "";
+  
+  if (!id || !email) return; // No valid session
+  
+  const request: SiginBody = {
+    app_id: appData.app_id,
+    email: email,
+    affiliate_id: affiliateid  // CRITICAL: Always include affiliate_id
+  };
+  
+  const response = await authSignin(request);
+  if (response) {
+    setAuthSigninResponse(response);
+  }
+}, [setAuthSigninResponse, appData, user]);
+```
+
+**CRITICAL**: The `affiliate_id` must always be sent with the signin request.
+
+### Stage 2: Session Creation and Subapplication Login
+
+#### Session Creation Pattern
+```typescript
+useEffect(() => {
+  if (authSigninResponse == null) return;
+  
+  const time = new Date();
+  setAppData({ 
+    ...appData, 
+    user_id: authSigninResponse.body.data.user_id, 
+    session: {
+      session_id: authSigninResponse.body.data.session_id,
+      time: time.getTime()/1000 + 60*60,
+      status: "VERIFIED",
+      update: "s" + (appData.session.update ?? "")
+    }
+  });
+}, [authSigninResponse]);
+```
+
+#### Direct Subapplication Login Pattern
+```typescript
+const sendLoginMessagev2 = useCallback(async () => {
+  const tokens = (await fetchAuthSession()).tokens!
+  
+  const idToken = tokens.idToken!.toString()
+  let object = {
+    user_id: appData.user_id,
+    idToken: idToken,
+    refreshToken: '',
+    app_id: appData.app_id
+  }
+
+  let loginObj = JSON.stringify(object);
+
+  sendMessage("PWAInputController", "LoginV2", loginObj);
+},[appData]);
+
+useEffect(() => {
+  if (authSigninResponse == null) return;
+  sendLoginMessagev2();
+},[authSigninResponse]);
+```
+
+## Key Authentication Components
+
+### Required Imports and Dependencies
+- `authSignin` from [src/auth/authsignin.ts](mdc:src/auth/authsignin.ts)
+- `fetchAuthSession` from AWS Amplify for token retrieval
+- AppContext for session management
+- Unity context for `sendMessage` function
+
+### Critical Data Flow
+1. **Signin Request** → `authSignin(request)` with affiliate_id
+2. **Response Handling** → `setAuthSigninResponse(response)`
+3. **Session Creation** → Update AppData with session_id and VERIFIED status
+4. **Direct Login** → `sendLoginMessagev2()` immediately sends credentials to Unity subapplication
+
+### Session Management
+- Session status should be "VERIFIED" after successful signin
+- Session includes expiration time (current time + 1 hour)
+- Session update field tracks changes for effect dependencies
+- Login credentials are sent directly via Unity messaging
+
+## Best Practices
+
+1. **Always include affiliate_id** in signin requests
+2. **Use direct messaging pattern** for subapplication login data transmission
+3. **Handle error cases** gracefully in async operations
+4. **Validate session data** before proceeding with authentication steps
+5. **Use immediate credential transmission** after successful authentication
+
+## Integration with AppContext
+
+The authentication flow integrates tightly with [src/context/AppContext.tsx](mdc:src/context/AppContext.tsx):
+- Updates `user_id` field from signin response
+- Manages `session` object with session_id, time, and status
+- Uses session updates to trigger direct credential transmission
+- No longer stores `loginData` as credentials are sent directly to Unity
+
+## Unity Integration
+
+The authentication integrates with Unity through the `sendMessage` function:
+- **Target Object**: "PWAInputController"
+- **Method**: "LoginV2"
+- **Data**: JSON stringified object containing user_id, idToken, refreshToken, and app_id
+
+- Stores `loginData` for subapplication communication
+- Uses session updates to trigger polling effects

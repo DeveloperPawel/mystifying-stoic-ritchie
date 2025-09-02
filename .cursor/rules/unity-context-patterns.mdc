@@ -1,0 +1,84 @@
+---
+alwaysApply: true
+description: Unity context provider patterns and event handling
+---
+
+# Unity Context Provider Guidelines
+
+## Context Provider Structure
+
+The Unity context provider uses `useUnityContext` hook and provides these methods:
+- `unityProvider` - The Unity instance provider
+- `addEventListener` - For listening to Unity events
+- `removeEventListener` - For cleaning up event listeners
+- `sendMessage` - For sending messages to Unity
+
+**CRITICAL**: The context provider itself should NEVER be updated or modified.
+
+## Event Listener Pattern
+
+When adding Unity event listeners, always follow this pattern:
+
+```tsx
+useEffect(() => {
+  //@ts-ignore
+  addEventListener("EventName", handleEventFunction);
+  return () => {
+    //@ts-ignore
+    removeEventListener("EventName", handleEventFunction);
+  };
+}, [addEventListener, removeEventListener, handleEventFunction]);
+```
+
+### Key Points:
+- Always use `useEffect` for lifecycle management
+- Include cleanup in the return function
+- Add dependencies array with `addEventListener`, `removeEventListener`, and handler function
+- Use `//@ts-ignore` for TypeScript compatibility
+
+## Send Message Pattern
+
+When sending messages to Unity, use this three-parameter structure:
+
+```tsx
+const sendExampleMessage = useCallback(() => {
+  let object = {
+    // your data properties
+  };
+  
+  let messageObj = JSON.stringify(object);
+  
+  sendMessage("UnityObjectName", "MethodName", messageObj);
+}, [dependencies]);
+```
+
+### Parameters:
+1. **Object Name** (string) - Name of the Unity GameObject/Controller
+2. **Method Name** (string) - Name of the method to call in Unity
+3. **Message Data** (string) - JSON stringified object containing the data
+
+### Key Points:
+- Always stringify the object before sending
+- Use `useCallback` for performance optimization
+- Include appropriate dependencies in the dependency array
+- Follow consistent naming for Unity objects (e.g., "PWAInputController")
+
+## File Structure
+
+- Unity context should be managed through [src/context/](mdc:src/context/)
+- Unity build files are located in [public/Build/](mdc:public/Build/)
+- Components using Unity should be in [src/components/](mdc:src/components/)
+
+## Common Unity Objects
+
+- `PWAInputController` - Main controller for PWA input handling
+- Standard methods like `LoginV2` for authentication
+
+## Best Practices
+
+1. **Never modify the context provider** - It should remain stable
+2. **Always clean up event listeners** - Prevent memory leaks
+3. **Use TypeScript ignores** - For Unity-specific method calls
+4. **Stringify data consistently** - Use `JSON.stringify()` for complex objects
+5. **Use meaningful event names** - Follow camelCase convention (e.g., "ChangeHUDUI")
+6. **Wrap in useCallback** - For send message functions to optimize performance

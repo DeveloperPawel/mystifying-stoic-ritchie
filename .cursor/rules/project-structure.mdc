@@ -1,0 +1,90 @@
+---
+alwaysApply: true
+---
+
+# Project Structure Guidelines
+
+## Component Organization
+
+### Modal Components
+- All modal page components should be created in appropriate subdirectories under [src/components/](mdc:src/components/)
+- Follow the existing naming convention: `[ComponentName]Modal.tsx`
+- Each modal should have its own directory if it requires multiple files
+
+### Main Integration Point
+- All modal pages must be integrated through [src/app/hero-blocks/page.tsx](mdc:src/app/hero-blocks/page.tsx)
+- This is the ONLY file where new page modals should be imported and rendered
+
+### Context Usage
+- Use [src/context/](mdc:src/context/) for shared state management
+- All modals should consume `AppContext` for consistent state access
+
+## File Naming Conventions
+
+- Modal components: `[Name]Modal.tsx`
+- Modal IDs: `[name]Modal` (camelCase)
+- Props interfaces: `[Name]ModalProps`
+
+## Integration Workflow
+
+1. Create modal component in appropriate `src/components/[feature]/` directory
+2. Import the modal component in [src/app/hero-blocks/page.tsx](mdc:src/app/hero-blocks/page.tsx)
+3. Add the modal structure with proper Bootstrap modal classes
+4. Ensure unique modal ID following the naming convention
+
+## Key Files
+
+- **Main integration**: [src/app/hero-blocks/page.tsx](mdc:src/app/hero-blocks/page.tsx)
+- **Context**: [src/context/AppContext.tsx](mdc:src/context/AppContext.tsx)
+- **Component directory**: [src/components/](mdc:src/components/)
+- **Types**: [src/types/](mdc:src/types/)
+
+## Dependencies
+
+- React functional components with hooks
+- Bootstrap modal classes and behavior
+- Custom Box and Flex components (likely from Chakra UI or similar)
+- Context API for state management
+# Project Structure Guidelines
+
+## Component Organization
+
+### Modal Components
+- All modal page components should be created in appropriate subdirectories under [src/components/](mdc:src/components/)
+- Follow the existing naming convention: `[ComponentName]Modal.tsx`
+- Each modal should have its own directory if it requires multiple files
+
+### Main Integration Point
+- All modal pages must be integrated through [src/app/hero-blocks/page.tsx](mdc:src/app/hero-blocks/page.tsx)
+- This is the ONLY file where new page modals should be imported and rendered
+
+### Context Usage
+- Use [src/context/](mdc:src/context/) for shared state management
+- All modals should consume `AppContext` for consistent state access
+
+## File Naming Conventions
+
+- Modal components: `[Name]Modal.tsx`
+- Modal IDs: `[name]Modal` (camelCase)
+- Props interfaces: `[Name]ModalProps`
+
+## Integration Workflow
+
+1. Create modal component in appropriate `src/components/[feature]/` directory
+2. Import the modal component in [src/app/hero-blocks/page.tsx](mdc:src/app/hero-blocks/page.tsx)
+3. Add the modal structure with proper Bootstrap modal classes
+4. Ensure unique modal ID following the naming convention
+
+## Key Files
+
+- **Main integration**: [src/app/hero-blocks/page.tsx](mdc:src/app/hero-blocks/page.tsx)
+- **Context**: [src/context/AppContext.tsx](mdc:src/context/AppContext.tsx)
+- **Component directory**: [src/components/](mdc:src/components/)
+- **Types**: [src/types/](mdc:src/types/)
+
+## Dependencies
+
+- React functional components with hooks
+- Bootstrap modal classes and behavior
+- Custom Box and Flex components (likely from Chakra UI or similar)
+- Context API for state management

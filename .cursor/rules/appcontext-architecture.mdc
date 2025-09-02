@@ -1,0 +1,102 @@
+---
+alwaysApply: true
+---
+
+# AppContext Architecture Guide
+
+## Overview
+
+The AppContext is the central state management system located at [src/context/AppContext.tsx](mdc:src/context/AppContext.tsx). This is a **wrapper application** that holds another application referred to as the **subapplication**. The AppContext contains all user and application data that changes between different template implementations.
+
+## Core Interface: AppData
+
+The main data structure is the `AppData` interface:
+
+```typescript
+export interface AppData {
+  app_id: string;
+  affiliate_id: string;
+  user_id: string;
+  email: string;
+  session: SessionObj;
+  offers: Offer[];
+  fixed_offers: Offer[];
+  images: Dict;
+  loginData: GameLoginData | null;
+  transactionid: string;
+  purchase: object | null;
+  contact: ContactObj | null;
+  reward: object | null;
+}
+```
+
+## Field Definitions and Data Sources
+
+### Core Identifiers
+- **`app_id`**: String UUID v4 from environment variables (`NEXT_APP_ID`)
+- **`affiliate_id`**: String value stored in localStorage, can be set via `?aff=` URL parameter
+- **`user_id`**: String UUID for the current user
+- **`email`**: String email address of the user
+
+### Session Management
+- **`session`**: SessionObj - **CRITICAL** object that controls user verification status
+  - Controls when users must re-verify their email
+  - Updated to allow users to make purchases once verified
+  - Contains `session_id`, `time`, and `status` ("NOUSER", "VERIFIED", "UNVERIFIED")
+
+### Offers and Content
+- **`offers`**: Array of offers populated from asynchronous sources (API calls)
+- **`fixed_offers`**: Array of offers loaded from environment variables (`NEXT_PUBLIC_FIXED_OFFERS`)
+- **`images`**: Dictionary [string, string] - key-value store of image names and URL locations
+
+### Subapplication Integration
+- **`loginData`**: GameLoginData | null - Login credentials sent to the subapplication
+- **`purchase`**: Object | null - Assists in purchase fulfillment in the subapplication
+- **`contact`**: ContactObj | null - User contact details for marketing purposes by the subapplication
+- **`reward`**: Object | null - Assists in reward retrieval in the subapplication
+
+### Transaction Management
+- **`transactionid`**: String identifier for tracking transactions
+
+## Supporting Interfaces
+
+### SessionObj
+```typescript
+export interface SessionObj extends Updatable {
+  session_id: string;
+  time: number;
+  status: string; // "NOUSER" | "VERIFIED" | "UNVERIFIED"
+}
+```
+
+### ContactObj
+```typescript
+export interface ContactObj {
+  email: string;
+  verified: boolean;
+}
+```
+
+## Data Flow and Initialization
+
+1. **Environment Variables**: `app_id` and `fixed_offers` loaded at startup
+2. **localStorage**: `affiliate_id` persisted and retrieved from localStorage
+3. **URL Parameters**: `affiliate_id` can be set via `?aff=` query parameter
+4. **Async Sources**: `offers` populated from API calls
+5. **User Actions**: Session, user data, and subapplication data updated through user interactions
+
+## Key Architecture Principles
+
+- **Wrapper Pattern**: This application wraps and communicates with a subapplication
+- **Template Flexibility**: Data structure designed to change between different application implementations
+- **Session-Driven**: The `session` object is vital for controlling user verification and purchase authorization
+- **Persistent State**: Critical data persisted in localStorage with app_id as key prefix
+- **Subapplication Communication**: Multiple fields (`loginData`, `purchase`, `contact`, `reward`) facilitate communication with the wrapped subapplication
+
+## Usage Guidelines
+
+- Always access app data through the AppContext
+- The `session` object status must be checked before allowing purchases
+- Use `app_id` as prefix for any localStorage operations
+- Subapplication data fields should be updated when communicating with the wrapped application
+- Fixed offers are environment-driven, dynamic offers are API-driven

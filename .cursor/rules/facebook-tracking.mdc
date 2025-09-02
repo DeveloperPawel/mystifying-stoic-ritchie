@@ -1,0 +1,124 @@
+---
+description: "Facebook tracking implementation using react-facebook-pixel library"
+---
+
+# Facebook Tracking Implementation Guide
+
+## Library and Environment Setup
+
+Use the `react-facebook-pixel` library for Facebook tracking implementation:
+
+```typescript
+import ReactPixel from 'react-facebook-pixel';
+```
+
+The Facebook Pixel ID is stored in environment variables as `process.env.NEXT_PUBLIC_FB_PIXEL`.
+
+## Initialization Pattern
+
+Always initialize the pixel before using any tracking methods:
+
+```typescript
+ReactPixel.init(process.env.NEXT_PUBLIC_FB_PIXEL!);
+```
+
+**Best Practice**: Initialize in your main app component or context provider to ensure it's available throughout the application.
+
+## Common Tracking Methods
+
+### Page View Tracking
+```typescript
+ReactPixel.pageView();
+```
+Use this for route changes and initial page loads.
+
+### Purchase Event Tracking
+```typescript
+ReactPixel.track('Purchase', { 
+  currency: "USD", 
+  value: 30.00 
+});
+```
+Implement this in checkout completion flows and purchase confirmation pages.
+
+### Custom Event Tracking
+```typescript
+ReactPixel.trackCustom('MyCustomEvent', { 
+  customData: 'someValue' 
+});
+```
+Use for application-specific events like user registration, form submissions, or custom user actions.
+
+## Implementation Guidelines
+
+### 1. Context Integration
+Consider implementing Facebook tracking in [src/context/AppContext.tsx](mdc:src/context/AppContext.tsx) for global state management and consistent tracking across the application.
+
+### 2. Purchase Integration
+For e-commerce tracking, integrate purchase events with the AppData purchase field and transaction management:
+
+```typescript
+// When purchase is completed
+if (appData.purchase) {
+  ReactPixel.track('Purchase', {
+    currency: "USD",
+    value: appData.purchase.amount,
+    content_ids: [appData.transactionid]
+  });
+}
+```
+
+### 3. User Authentication Tracking
+Track user authentication events in signin flows:
+
+```typescript
+// After successful authentication
+ReactPixel.track('CompleteRegistration', {
+  content_name: 'User Registration'
+});
+```
+
+### 4. Environment Variable Validation
+Always validate the environment variable exists before initialization:
+
+```typescript
+if (process.env.NEXT_PUBLIC_FB_PIXEL) {
+  ReactPixel.init(process.env.NEXT_PUBLIC_FB_PIXEL);
+} else {
+  console.warn('Facebook Pixel ID not found in environment variables');
+}
+```
+
+## Integration Points
+
+### Modal Components
+For modal-based workflows in [src/components/modalv2/](mdc:src/components/modalv2/), track user interactions:
+
+```typescript
+// Track modal interactions
+ReactPixel.trackCustom('ModalInteraction', {
+  modalName: 'CheckoutModal',
+  action: 'opened'
+});
+```
+
+### Main Application Integration
+Implement in [src/app/hero-blocks/page.tsx](mdc:src/app/hero-blocks/page.tsx) where modal pages are integrated for consistent tracking across all user flows.
+
+## Error Handling
+
+Wrap tracking calls in try-catch blocks to prevent tracking errors from breaking application functionality:
+
+```typescript
+try {
+  ReactPixel.track('Purchase', { currency: "USD", value: amount });
+} catch (error) {
+  console.error('Facebook Pixel tracking error:', error);
+}
+```
+
+## Performance Considerations
+
+- Initialize pixel only once per session
+- Use `useCallback` for tracking functions in React components
+- Avoid tracking on every render - use appropriate dependencies in useEffect hooks

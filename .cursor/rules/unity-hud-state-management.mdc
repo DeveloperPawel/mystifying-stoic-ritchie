@@ -1,0 +1,119 @@
+---
+alwaysApply: false
+---
+# Unity HUD State Management
+
+## Overview
+
+Unity events can change the heads-up display (HUD) by controlling which modal is displayed. The Unity context invokes `changeHUDState` to display modals or perform logic to display different modals.
+
+## Core Pattern: changeHUDState Function
+
+The `changeHUDState` function uses a switch statement for updating state. To add a new modal, you need to add a new case or modify existing cases:
+
+```tsx
+const changeHUDState = (state: string) => {
+  switch (state) {
+    case "LOGINMAIN":
+      setStateVal(state);
+      break;
+
+    case "ATTEMPTLOGIN":
+      setStateVal(state);
+      break;
+
+    case "CONTACT":
+      setStateVal(state);
+      break;
+
+    case "OFFER":
+      setHudState(HUDState.OFFER);
+      break;
+
+    case "NORESOURCE":
+      setHudState(HUDState.NORESOURCE);
+      break;
+
+    case "POSTLOGIN":
+      setHudState(HUDState.POSTLOGIN);
+      break;
+
+    default:
+      console.log(`could not identify state ${state}`);
+      break;
+  }
+};
+```
+
+## UI Update Pattern with useEffect
+
+Update the UI using `useEffect` to respond to HUD state changes:
+
+```tsx
+useEffect(() => {
+  if (hudState !== HUDState.LOGINMAIN) return;
+  const element = document.getElementById('loginMainModal')
+  if (element) {
+    element.classList.add("show");
+    element.style.display = "block";
+  }
+  setHudState(HUDState.NONE);
+}, [hudState]);
+```
+
+## Adding New Modals
+
+When adding a new modal to the HUD system:
+
+1. **Add new case to `changeHUDState`** - Define the state string and corresponding action
+2. **Add corresponding `useEffect`** - Handle UI updates for the new state
+3. **Ensure proper modal ID** - Follow naming convention for modal element IDs
+4. **Update HUDState enum** - Add new state to the HUDState enumeration if needed
+
+## Critical Rules
+
+### NEVER setHudState(HUDState.NONE) After Async Requests
+
+**IMPORTANT**: Never call `setHudState(HUDState.NONE)` after making an async request. This can cause race conditions and improper state management.
+
+❌ **DON'T DO THIS:**
+```tsx
+useEffect(() => {
+  if (hudState !== HUDState.SOMESTATE) return;
+  
+  // Async operation
+  someAsyncFunction().then(() => {
+    setHudState(HUDState.NONE); // ❌ NEVER DO THIS
+  });
+}, [hudState]);
+```
+
+✅ **CORRECT PATTERN:**
+```tsx
+useEffect(() => {
+  if (hudState !== HUDState.SOMESTATE) return;
+  
+  // Synchronous UI updates only
+  const element = document.getElementById('someModal');
+  if (element) {
+    element.classList.add("show");
+    element.style.display = "block";
+  }
+  setHudState(HUDState.NONE); // ✅ Only after synchronous operations
+}, [hudState]);
+```
+
+## State Management Guidelines
+
+- Use `setStateVal(state)` for string-based state values
+- Use `setHudState(HUDState.SPECIFIC_STATE)` for enum-based HUD states
+- Always include a default case in the switch statement with logging
+- Ensure modal element IDs match the expected naming pattern
+- Clean up modal display states properly in useEffect hooks
+
+## Integration Points
+
+- **Unity Context**: [src/context/](mdc:src/context/) - Unity integration and event handling
+- **Modal Components**: [src/components/](mdc:src/components/) - Individual modal implementations  
+- **Main Integration**: [src/app/hero-blocks/page.tsx](mdc:src/app/hero-blocks/page.tsx) - Central modal rendering point
+- **HUD State Types**: [src/types/](mdc:src/types/) - HUDState enum and related types
